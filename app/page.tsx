@@ -183,7 +183,9 @@ export default function HomePage() {
           <section className="heroGrid">
             <WaybackViewer
               activeRelease={activeRelease}
+              brief={brief}
               frames={brief?.frames ?? []}
+              loadingBrief={loadingBrief}
               mode={viewMode}
               profile={selected}
               releases={visibleReleases}
@@ -272,38 +274,6 @@ export default function HomePage() {
           </section>
 
           <section className="bottomGrid">
-            <div className="visionPanel">
-              <div className="panelHeader">
-                <div>
-                  <h2>{loadingBrief ? "Reading frames..." : brief?.headline}</h2>
-                </div>
-                <span className="confidence">
-                  <Brain size={16} />
-                  {brief?.confidence ?? "--"}%
-                </span>
-              </div>
-
-              <div className="findingList">
-                {(brief?.visualFindings ?? []).map((finding) => (
-                  <div className="finding" key={finding}>
-                    <Radar size={16} />
-                    <span>{finding}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="argumentBox">
-                <Sparkles size={17} />
-                <p>{brief?.argument}</p>
-                <InfoTip text="Verbal line: this is where we explain why the same imagery can create social proof, ROI pressure, or first-mover status depending on what the visual model sees." />
-              </div>
-
-              <div className="cautionBox">
-                <strong>Constraint</strong>
-                <span>{brief?.caution}</span>
-              </div>
-            </div>
-
             <div className="outreachPanel">
               <div>
                 <h2>Generated follow-up</h2>
@@ -344,14 +314,18 @@ export default function HomePage() {
 
 function WaybackViewer({
   activeRelease,
+  brief,
   frames,
+  loadingBrief,
   mode,
   profile,
   releases,
   source
 }: {
   activeRelease: WaybackRelease;
+  brief: VisionBrief | null;
   frames: FrameAnalysis[];
+  loadingBrief: boolean;
   mode: ViewMode;
   profile: CustomerProfile;
   releases: WaybackRelease[];
@@ -359,6 +333,17 @@ function WaybackViewer({
 }) {
   const displayed = mode === "compare" ? releases : [activeRelease];
   const sourceLabel = source.startsWith("esri-local-changes") ? "Exact changes" : "Curated";
+  const insightRelease = mode === "compare" ? displayed[displayed.length - 1] : activeRelease;
+  const insightFrame = insightRelease ? findFrame(frames, insightRelease.releaseNum) : undefined;
+  const insightAnnotations = (insightFrame?.annotations ?? [])
+    .slice(0, 4)
+    .map((annotation) => ({
+      annotation,
+      date: insightRelease?.releaseDateLabel ?? activeRelease.releaseDateLabel,
+      summary: insightFrame?.summary
+    }))
+    .filter(({ annotation }) => annotation.salesUse || annotation.evidence)
+    .slice(0, 4);
 
   return (
     <div className={`mapPanel ${mode}`}>
@@ -395,11 +380,73 @@ function WaybackViewer({
           release={activeRelease}
         />
       )}
+      <MapIntelligence brief={brief} insights={insightAnnotations} loading={loadingBrief} />
       <div className="mapCaption">
         <strong>{profile.address}</strong>
         <span>
           {profile.coordinates.latitude.toFixed(4)}, {profile.coordinates.longitude.toFixed(4)}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function MapIntelligence({
+  brief,
+  insights,
+  loading
+}: {
+  brief: VisionBrief | null;
+  insights: { annotation: ImageAnnotation; date: string; summary?: string }[];
+  loading: boolean;
+}) {
+  return (
+    <div className="mapIntelligence">
+      <div className="mapIntelHeader">
+        <div>
+          <span>Visual read</span>
+          <strong>{loading ? "Reading marked evidence..." : brief?.headline}</strong>
+        </div>
+        <em>
+          <Brain size={15} />
+          {brief?.confidence ?? "--"}%
+        </em>
+      </div>
+
+      <div className="annotationInsights">
+        {insights.length ? (
+          insights.map(({ annotation, date }) => (
+            <article className={`annotationInsight ${annotation.tone}`} key={`${date}-${annotation.id}-${annotation.label}`}>
+              <div>
+                <span>{annotation.id ?? "A"}</span>
+                <strong>{annotation.label}</strong>
+                <em>{date}</em>
+              </div>
+              <p>{annotation.salesUse ?? annotation.evidence}</p>
+              {annotation.evidence ? <small>{annotation.evidence}</small> : null}
+              {typeof annotation.confidence === "number" ? <b>{annotation.confidence}%</b> : null}
+            </article>
+          ))
+        ) : (
+          <article className="annotationInsight">
+            <div>
+              <span>A</span>
+              <strong>Reading frames</strong>
+            </div>
+            <p>The model is linking marked roof and neighborhood evidence to the sales angle.</p>
+          </article>
+        )}
+      </div>
+
+      <div className="mapLogic">
+        <div>
+          <Sparkles size={16} />
+          <p>{brief?.argument}</p>
+        </div>
+        <div>
+          <Radar size={16} />
+          <p>{brief?.caution}</p>
+        </div>
       </div>
     </div>
   );

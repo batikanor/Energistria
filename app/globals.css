@@ -352,6 +352,174 @@ h2 {
   -webkit-line-clamp: 3;
 }
 
+.mapIntelligence {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  background: #fbf8f1;
+  border-top: 1px solid var(--line);
+}
+
+.mapIntelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.mapIntelHeader div {
+  display: grid;
+  gap: 4px;
+}
+
+.mapIntelHeader span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mapIntelHeader strong {
+  font-size: 21px;
+  line-height: 1.08;
+}
+
+.mapIntelHeader em {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  color: #0f5138;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  background: #daf2e4;
+  border-radius: 999px;
+}
+
+.annotationInsights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.annotationInsight {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 138px;
+  padding: 12px;
+  overflow: hidden;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  border-radius: 8px;
+}
+
+.annotationInsight.green {
+  border-left-color: var(--green);
+}
+
+.annotationInsight.amber {
+  border-left-color: var(--amber);
+}
+
+.annotationInsight.red {
+  border-left-color: var(--red);
+}
+
+.annotationInsight div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.annotationInsight div span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+  background: var(--coal);
+  border-radius: 999px;
+}
+
+.annotationInsight strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotationInsight em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.annotationInsight p {
+  color: #25231f;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.32;
+}
+
+.annotationInsight small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.annotationInsight b {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.mapLogic {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 10px;
+}
+
+.mapLogic div {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.mapLogic div:first-child {
+  color: #173f31;
+  background: #e4f2e9;
+  border: 1px solid #c6dfd1;
+}
+
+.mapLogic div:last-child {
+  color: #602b24;
+  background: #f7e5df;
+  border: 1px solid #edcdc4;
+}
+
+.mapLogic p {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.36;
+}
+
 .waybackTile {
   display: block;
   width: 256px;
@@ -639,7 +807,7 @@ h2 {
 
 .bottomGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -1236,6 +1404,11 @@ h2 {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+  }
+
+  .annotationInsights,
+  .mapLogic {
+    grid-template-columns: 1fr;
   }
 
   .frameCard {

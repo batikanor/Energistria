@@ -1,9 +1,13 @@
 export type ImageAnnotation = {
+  id?: string;
   x: number;
   y: number;
   width: number;
   height: number;
   label: string;
+  evidence?: string;
+  salesUse?: string;
+  confidence?: number;
   tone: "green" | "amber" | "blue" | "red";
 };
 

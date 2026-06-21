@@ -3,6 +3,8 @@ import { profiles } from "@/lib/profiles";
 import { lonLatToTile, waybackTileUrl } from "@/lib/tiles";
 import type { FrameAnalysis, ImageAnnotation, VisionBrief } from "@/lib/vision";
 
+const defaultVisionModel = "anthropic/claude-opus-4.8";
+
 type ReleaseInput = {
   releaseNum: number;
   releaseDateLabel?: string;
@@ -35,11 +37,15 @@ export async function POST(request: NextRequest) {
       `Customer: ${profile.name}`,
       `Address: ${profile.address}`,
       `Archetype: ${profile.archetype}`,
-      "Inspect the aerial imagery frames. Return strict JSON only.",
-      "Find visual evidence useful for a solar installer follow-up: existing solar-panel-like rectangles nearby, target roof planes, shading risk, neighborhood adoption, or first-mover opportunity.",
+      "Inspect the aerial imagery frames in chronological order. Return strict JSON only.",
+      "Act like a senior solar sales strategist and visual analyst. Avoid generic phrases like 'potential for solar', 'favorable roof conditions', or 'monitor future shading'.",
+      "Only use visible image evidence plus the provided customer archetype. Do not invent private facts, income, ownership, or exact engineering yield.",
+      "Make the story sharp: decide whether this is social proof, first-mover advantage, roof monetization, board-risk reduction, EV/heat-pump load anchoring, premium aesthetics, or operational resilience.",
+      "Every visualFinding must cite an annotation id in brackets, for example [A2]. The argument and caution must also refer to visible evidence, not vague market logic.",
       "For each frame, return annotations in normalized coordinates within that single square image: x, y, width, height from 0 to 1.",
-      "Use labels of 2 to 5 words. Use tone green for strong pro-solar evidence, blue for context, amber for risk/uncertainty, red for missing adoption or blocker.",
-      "Schema: {\"headline\":\"string\",\"confidence\":0-100,\"visualFindings\":[\"string\"],\"argument\":\"string\",\"caution\":\"string\",\"nextMove\":\"string\",\"frames\":[{\"releaseNum\":number,\"summary\":\"string\",\"annotations\":[{\"x\":number,\"y\":number,\"width\":number,\"height\":number,\"label\":\"string\",\"tone\":\"green|amber|blue|red\"}]}]}"
+      "Each annotation needs an id like A1, a 2-5 word label, a concrete evidence sentence, a salesUse sentence explaining why this marked spot changes the pitch, confidence 0-100, and tone green/blue/amber/red.",
+      "Use tone green for strong pro-solar evidence, blue for context, amber for uncertainty or inspection needs, red for blocker or missing adoption.",
+      "Schema: {\"headline\":\"string\",\"confidence\":0-100,\"visualFindings\":[\"string\"],\"argument\":\"string\",\"caution\":\"string\",\"nextMove\":\"string\",\"frames\":[{\"releaseNum\":number,\"summary\":\"string\",\"annotations\":[{\"id\":\"A1\",\"x\":number,\"y\":number,\"width\":number,\"height\":number,\"label\":\"string\",\"evidence\":\"string\",\"salesUse\":\"string\",\"confidence\":0-100,\"tone\":\"green|amber|blue|red\"}]}]}"
     ].join("\n");
 
     const content = [
@@ -67,12 +73,12 @@ export async function POST(request: NextRequest) {
         "X-Title": "Energistria"
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini",
+        model: process.env.OPENROUTER_VISION_MODEL ?? process.env.OPENROUTER_MODEL ?? defaultVisionModel,
         messages: [
           {
             role: "system",
             content:
-              "You are a visual analyst for residential solar sales. Return concise, grounded JSON. Do not invent private personal facts."
+              "You are an elite visual analyst for residential solar sales. Produce grounded, specific, non-generic JSON. Prefer fewer stronger claims over generic sales copy."
           },
           {
             role: "user",
@@ -80,8 +86,8 @@ export async function POST(request: NextRequest) {
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.2,
-        max_tokens: 1400
+        temperature: 0.1,
+        max_tokens: 2400
       })
     });
 
@@ -105,6 +111,8 @@ function buildFallbackBrief(
 ): VisionBrief {
   const selectedReleases = releases.length ? releases : [{ releaseNum: 0, releaseDateLabel: "current" }];
 
+  const annotations = buildFallbackAnnotations(profile);
+
   return {
     headline:
       profile.id === "hartmann"
@@ -113,12 +121,7 @@ function buildFallbackBrief(
           ? "Convert an idle roof into a priced energy asset"
           : "Join the neighborhood shift without adding household risk",
     confidence: profile.id === "vogt" ? 86 : profile.id === "hartmann" ? 79 : 83,
-    visualFindings: [
-      profile.visualEvidence.oldFrame,
-      profile.visualEvidence.newFrame,
-      profile.visualEvidence.neighborhoodShift,
-      profile.visualEvidence.roofRead
-    ],
+    visualFindings: annotations.map((annotation) => `[${annotation.id}] ${annotation.salesUse}`),
     argument: profile.visualEvidence.bestArgument,
     caution: profile.visualEvidence.risk,
     nextMove: profile.outreach.cta,
@@ -128,7 +131,7 @@ function buildFallbackBrief(
         index === selectedReleases.length - 1
           ? profile.visualEvidence.newFrame
           : profile.visualEvidence.oldFrame,
-      annotations: profile.fallbackAnnotations
+      annotations
     })),
     generatedBy: "fallback"
   };
@@ -189,7 +192,7 @@ function normalizeAnnotations(value: unknown, fallback: ImageAnnotation[]) {
   }
 
   const annotations = value
-    .map((item) => {
+    .map((item, index) => {
       if (!item || typeof item !== "object") {
         return null;
       }
@@ -205,18 +208,60 @@ function normalizeAnnotations(value: unknown, fallback: ImageAnnotation[]) {
         return null;
       }
 
-      return {
+      const normalized: ImageAnnotation = {
         x: clamp(annotation.x),
         y: clamp(annotation.y),
         width: clamp(annotation.width, 0.05, 0.6),
         height: clamp(annotation.height, 0.05, 0.6),
+        id: typeof annotation.id === "string" ? annotation.id.slice(0, 4) : `A${index + 1}`,
         label: annotation.label.slice(0, 36),
         tone: isTone(annotation.tone) ? annotation.tone : "blue"
       };
+
+      const evidence =
+        typeof annotation.evidence === "string" ? annotation.evidence.slice(0, 180) : fallback[index]?.evidence;
+      const salesUse =
+        typeof annotation.salesUse === "string" ? annotation.salesUse.slice(0, 220) : fallback[index]?.salesUse;
+      const confidence =
+        typeof annotation.confidence === "number"
+          ? Math.max(0, Math.min(100, Math.round(annotation.confidence)))
+          : fallback[index]?.confidence;
+
+      if (evidence) {
+        normalized.evidence = evidence;
+      }
+      if (salesUse) {
+        normalized.salesUse = salesUse;
+      }
+      if (typeof confidence === "number") {
+        normalized.confidence = confidence;
+      }
+
+      return normalized;
     })
     .filter((item): item is ImageAnnotation => Boolean(item));
 
   return annotations.length ? annotations.slice(0, 5) : fallback;
+}
+
+function buildFallbackAnnotations(profile: (typeof profiles)[number]) {
+  return profile.fallbackAnnotations.map((annotation, index) => ({
+    ...annotation,
+    id: `A${index + 1}`,
+    evidence:
+      index === 0
+        ? profile.visualEvidence.roofRead
+        : index === 1
+          ? profile.visualEvidence.neighborhoodShift
+          : profile.visualEvidence.risk,
+    salesUse:
+      index === 0
+        ? profile.visualEvidence.bestArgument
+        : index === 1
+          ? profile.visualEvidence.neighborhoodShift
+          : `Use this as the honest caveat: ${profile.visualEvidence.risk}`,
+    confidence: Math.max(72, 88 - index * 6)
+  }));
 }
 
 function clamp(value: number, min = 0, max = 1) {
