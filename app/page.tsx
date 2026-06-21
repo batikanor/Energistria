@@ -10,17 +10,18 @@ import {
   CalendarClock,
   CircleHelp,
   ExternalLink,
+  Grid2X2,
   Home,
   MapPinned,
   Play,
   Radar,
   Satellite,
-  ShieldCheck,
   Sparkles,
   Zap
 } from "lucide-react";
 import { fallbackWaybackReleases, profiles, type CustomerProfile } from "@/lib/profiles";
 import { lonLatToTile, waybackTileUrl } from "@/lib/tiles";
+import type { FrameAnalysis, ImageAnnotation, VisionBrief } from "@/lib/vision";
 
 type WaybackRelease = {
   releaseNum: number;
@@ -28,15 +29,7 @@ type WaybackRelease = {
   itemTitle: string;
 };
 
-type VisionBrief = {
-  headline: string;
-  confidence: number;
-  visualFindings: string[];
-  argument: string;
-  caution: string;
-  nextMove: string;
-  generatedBy: string;
-};
+type ViewMode = "compare" | "animate";
 
 export default function HomePage() {
   const [selectedId, setSelectedId] = useState(profiles[0].id);
@@ -44,10 +37,12 @@ export default function HomePage() {
   const [timelineSource, setTimelineSource] = useState("fallback");
   const [frameIndex, setFrameIndex] = useState(0);
   const [brief, setBrief] = useState<VisionBrief | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("compare");
 
   const selected = profiles.find((profile) => profile.id === selectedId) ?? profiles[0];
   const activeRelease = timeline[frameIndex % timeline.length] ?? fallbackWaybackReleases[0];
   const loadingBrief = brief === null;
+  const visibleReleases = useMemo(() => timeline.slice(0, 4), [timeline]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,7 +68,7 @@ export default function HomePage() {
   useEffect(() => {
     const interval = window.setInterval(() => {
       setFrameIndex((current) => (current + 1) % Math.max(timeline.length, 1));
-    }, 1600);
+    }, 720);
 
     return () => window.clearInterval(interval);
   }, [timeline.length]);
@@ -84,7 +79,7 @@ export default function HomePage() {
     fetch("/api/vision-brief", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profileId: selected.id }),
+      body: JSON.stringify({ profileId: selected.id, releases: visibleReleases }),
       signal: controller.signal
     })
       .then((response) => response.json())
@@ -92,7 +87,7 @@ export default function HomePage() {
       .catch(() => undefined);
 
     return () => controller.abort();
-  }, [selected]);
+  }, [selected, visibleReleases]);
 
   function chooseProfile(profileId: string) {
     setSelectedId(profileId);
@@ -134,25 +129,31 @@ export default function HomePage() {
               </button>
             ))}
           </div>
-
-          <div className="commitPanel">
-            <ShieldCheck size={18} />
-            <div>
-              <strong>Data boundary</strong>
-              <span>Public addresses, fictional personas, real Wayback imagery.</span>
-            </div>
-          </div>
         </aside>
 
         <section className="mainColumn">
           <header className="topBar">
-            <div>
-              <p className="eyebrow">Input</p>
-              <h1>Customer profile and address.</h1>
+            <div className="identityBar">
+              <strong>{selected.name}</strong>
+              <span>{selected.address}</span>
             </div>
-            <div className="outputTitle">
-              <p className="eyebrow">Output</p>
-              <h2>Visual evidence, solar argument, next action.</h2>
+            <div className="viewControls" aria-label="Imagery view">
+              <button
+                className={viewMode === "compare" ? "active" : ""}
+                onClick={() => setViewMode("compare")}
+                title="Four Wayback frames side by side"
+                type="button"
+              >
+                <Grid2X2 size={17} />
+              </button>
+              <button
+                className={viewMode === "animate" ? "active" : ""}
+                onClick={() => setViewMode("animate")}
+                title="Fast Wayback animation"
+                type="button"
+              >
+                <Play size={17} />
+              </button>
             </div>
             <a className="sourceLink" href="https://livingatlas.arcgis.com/wayback/" target="_blank">
               ArcGIS Wayback
@@ -161,12 +162,18 @@ export default function HomePage() {
           </header>
 
           <section className="heroGrid">
-            <WaybackViewer profile={selected} release={activeRelease} source={timelineSource} />
+            <WaybackViewer
+              activeRelease={activeRelease}
+              frames={brief?.frames ?? []}
+              mode={viewMode}
+              profile={selected}
+              releases={visibleReleases}
+              source={timelineSource}
+            />
 
             <div className="dealPanel">
               <div className="panelHeader">
                 <div>
-                  <p className="eyebrow">Input record</p>
                   <h2>{selected.name}</h2>
                 </div>
                 <span className="statusPill">{selected.status}</span>
@@ -203,8 +210,8 @@ export default function HomePage() {
 
           <section className="timelineStrip" aria-label="Wayback release timeline">
             <div className="timelineHead">
-              <Play size={16} />
-              <strong>Imagery frames</strong>
+              <Satellite size={16} />
+              <strong>{timelineSource === "esri-local-changes" ? "Wayback" : "Fallback"}</strong>
               <span>{timelineSource === "esri-local-changes" ? "Local-change releases from Esri" : "Curated fallback releases"}</span>
             </div>
             <div className="timelineButtons">
@@ -225,7 +232,6 @@ export default function HomePage() {
             <div className="visionPanel">
               <div className="panelHeader">
                 <div>
-                  <p className="eyebrow">Output brief</p>
                   <h2>{loadingBrief ? "Reading frames..." : brief?.headline}</h2>
                 </div>
                 <span className="confidence">
@@ -257,7 +263,6 @@ export default function HomePage() {
 
             <div className="outreachPanel">
               <div>
-                <p className="eyebrow">Output actions</p>
                 <h2>Generated follow-up</h2>
               </div>
 
@@ -279,55 +284,57 @@ export default function HomePage() {
 }
 
 function WaybackViewer({
+  activeRelease,
+  frames,
+  mode,
   profile,
-  release,
+  releases,
   source
 }: {
+  activeRelease: WaybackRelease;
+  frames: FrameAnalysis[];
+  mode: ViewMode;
   profile: CustomerProfile;
-  release: WaybackRelease;
+  releases: WaybackRelease[];
   source: string;
 }) {
-  const tileGrid = useMemo(() => {
-    const center = lonLatToTile(profile.coordinates.longitude, profile.coordinates.latitude, 16);
-    const tiles = [];
-    for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
-      for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
-        const tile = { x: center.x + colOffset, y: center.y + rowOffset, z: center.z };
-        tiles.push({
-          key: `${tile.x}-${tile.y}-${tile.z}`,
-          url: waybackTileUrl(release.releaseNum, tile),
-          col: colOffset + 1,
-          row: rowOffset + 1
-        });
-      }
-    }
-    return tiles;
-  }, [profile, release]);
+  const displayed = mode === "compare" ? releases : [activeRelease];
 
   return (
-    <div className="mapPanel">
+    <div className={`mapPanel ${mode}`}>
       <div className="mapChrome">
         <span>
           <Satellite size={16} />
-          {release.itemTitle}
+          {mode === "compare" ? "4 frames" : activeRelease.itemTitle}
         </span>
         <span>{source}</span>
       </div>
-      <div className="tileStage">
-        {tileGrid.map((tile) => (
-          <img
-            alt=""
-            className="waybackTile"
-            key={tile.key}
-            src={tile.url}
-            style={{
-              gridColumn: tile.col + 1,
-              gridRow: tile.row + 1
-            }}
-          />
-        ))}
-        <div className="targetRing" />
-      </div>
+      {mode === "compare" ? (
+        <div className="compareGrid">
+          {displayed.map((release) => (
+            <div className="frameCard" key={release.releaseNum}>
+              <TileMosaic
+                annotations={findFrame(frames, release.releaseNum)?.annotations ?? profile.fallbackAnnotations}
+                compact
+                profile={profile}
+                release={release}
+              />
+              <div className="frameMeta">
+                <strong>{release.releaseDateLabel}</strong>
+                <span>{findFrame(frames, release.releaseNum)?.summary ?? release.itemTitle}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <TileMosaic
+          annotations={
+            findFrame(frames, activeRelease.releaseNum)?.annotations ?? profile.fallbackAnnotations
+          }
+          profile={profile}
+          release={activeRelease}
+        />
+      )}
       <div className="mapCaption">
         <strong>{profile.address}</strong>
         <span>
@@ -336,6 +343,88 @@ function WaybackViewer({
       </div>
     </div>
   );
+}
+
+function TileMosaic({
+  annotations,
+  compact = false,
+  profile,
+  release
+}: {
+  annotations: ImageAnnotation[];
+  compact?: boolean;
+  profile: CustomerProfile;
+  release: WaybackRelease;
+}) {
+  const tileGrid = useMemo(() => getTileGrid(profile, release), [profile, release]);
+
+  return (
+    <div className={`tileStage ${compact ? "compact" : ""}`}>
+      {tileGrid.map((tile) => (
+        <img
+          alt=""
+          className="waybackTile"
+          key={tile.key}
+          src={tile.url}
+          style={{
+            gridColumn: tile.col + 1,
+            gridRow: tile.row + 1
+          }}
+        />
+      ))}
+      <AnnotationOverlay annotations={annotations} />
+      <div className="targetRing" />
+    </div>
+  );
+}
+
+function AnnotationOverlay({ annotations }: { annotations: ImageAnnotation[] }) {
+  return (
+    <div className="annotationLayer">
+      {annotations.map((annotation) => {
+        const left = ((1 + annotation.x) / 3) * 100;
+        const top = ((1 + annotation.y) / 3) * 100;
+        const width = (annotation.width / 3) * 100;
+        const height = (annotation.height / 3) * 100;
+
+        return (
+          <span
+            className={`annotationBox ${annotation.tone}`}
+            key={`${annotation.label}-${left}-${top}`}
+            style={{
+              left: `${left}%`,
+              top: `${top}%`,
+              width: `${width}%`,
+              height: `${height}%`
+            }}
+          >
+            <em>{annotation.label}</em>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function getTileGrid(profile: CustomerProfile, release: WaybackRelease) {
+  const center = lonLatToTile(profile.coordinates.longitude, profile.coordinates.latitude, 16);
+  const tiles = [];
+  for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+    for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
+      const tile = { x: center.x + colOffset, y: center.y + rowOffset, z: center.z };
+      tiles.push({
+        key: `${release.releaseNum}-${tile.x}-${tile.y}-${tile.z}`,
+        url: waybackTileUrl(release.releaseNum, tile),
+        col: colOffset + 1,
+        row: rowOffset + 1
+      });
+    }
+  }
+  return tiles;
+}
+
+function findFrame(frames: FrameAnalysis[], releaseNum: number) {
+  return frames.find((frame) => frame.releaseNum === releaseNum);
 }
 
 function InfoTip({ text }: { text: string }) {

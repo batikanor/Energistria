@@ -29,6 +29,14 @@ export type CustomerProfile = {
     bestArgument: string;
     risk: string;
   };
+  fallbackAnnotations: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    label: string;
+    tone: "green" | "amber" | "blue" | "red";
+  }[];
   outreach: {
     subject: string;
     opener: string;
@@ -69,6 +77,11 @@ export const profiles: CustomerProfile[] = [
       bestArgument: "Your neighborhood is already quietly moving in this direction. This is the low-drama family version: predictable bills, backup storage, and a system sized so it disappears into the roofline.",
       risk: "Avoid an investor-style ROI pitch. Lead with calm, reliability, and the fact that installation does not turn the home into a construction site."
     },
+    fallbackAnnotations: [
+      { x: 0.45, y: 0.47, width: 0.22, height: 0.16, label: "target roof", tone: "green" },
+      { x: 0.12, y: 0.18, width: 0.18, height: 0.12, label: "nearby PV-like rectangles", tone: "blue" },
+      { x: 0.62, y: 0.28, width: 0.2, height: 0.13, label: "similar roof geometry", tone: "amber" }
+    ],
     outreach: {
       subject: "Sofia, I checked the block around Kollwitzstrasse",
       opener: "A quick visual check suggests your part of Prenzlauer Berg is crossing the point where solar stops feeling experimental.",
@@ -107,6 +120,11 @@ export const profiles: CustomerProfile[] = [
       bestArgument: "This is idle infrastructure. The roof is already there, the surface area is unusually valuable, and the decision should be evaluated like a low-volatility asset with energy-price upside.",
       risk: "Do not use emotional sustainability copy. Show sensitivity ranges, downside payback, and a clean financing comparison."
     },
+    fallbackAnnotations: [
+      { x: 0.34, y: 0.34, width: 0.3, height: 0.2, label: "large usable roof plane", tone: "green" },
+      { x: 0.13, y: 0.56, width: 0.22, height: 0.17, label: "tree shade risk", tone: "amber" },
+      { x: 0.61, y: 0.2, width: 0.19, height: 0.13, label: "comparable roof", tone: "blue" }
+    ],
     outreach: {
       subject: "Your roof is behaving like an idle asset",
       opener: "I modelled the address as an asset problem rather than a green purchase.",
@@ -145,6 +163,11 @@ export const profiles: CustomerProfile[] = [
       bestArgument: "This is the rare case where being first is the point. A restrained black-on-roof system lets the customer set the visual standard for the block while still cutting the bill.",
       risk: "Do not start with savings. Start with a generated visual and give her control over panel layout."
     },
+    fallbackAnnotations: [
+      { x: 0.39, y: 0.39, width: 0.25, height: 0.18, label: "design-sensitive roof", tone: "green" },
+      { x: 0.1, y: 0.22, width: 0.22, height: 0.15, label: "low visible PV density", tone: "red" },
+      { x: 0.63, y: 0.52, width: 0.18, height: 0.12, label: "quiet installation zone", tone: "blue" }
+    ],
     outreach: {
       subject: "Mara, I think the design objection is solvable",
       opener: "The aerial history makes this look less like a standard solar sale and more like a chance to set the local design precedent.",
