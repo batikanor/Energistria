@@ -34,9 +34,11 @@ type WaybackRelease = {
 
 type ViewMode = "compare" | "animate";
 type CallMode = "brief" | "detailed";
+type CallLanguage = "en" | "de";
 type CallResult = {
   status: "idle" | "generating" | "audio-ready" | "script-only" | "error";
   mode?: CallMode;
+  language?: CallLanguage;
   script?: {
     title: string;
     duration: string;
@@ -58,6 +60,7 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("compare");
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "queued" | "error">("idle");
   const [callResult, setCallResult] = useState<CallResult>({ status: "idle" });
+  const [callLanguage, setCallLanguage] = useState<CallLanguage>("en");
 
   const selected = profiles.find((profile) => profile.id === selectedId) ?? profiles[0];
   const activeRelease = timeline[frameIndex % timeline.length] ?? fallbackWaybackReleases[0];
@@ -139,16 +142,17 @@ export default function HomePage() {
     if (callResult.audioUrl) {
       URL.revokeObjectURL(callResult.audioUrl);
     }
-    setCallResult({ status: "generating", mode });
+    setCallResult({ status: "generating", mode, language: callLanguage });
     try {
       const response = await fetch("/api/call", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId: selected.id, brief, mode })
+        body: JSON.stringify({ profileId: selected.id, brief, mode, language: callLanguage })
       });
       const data = (await response.json()) as {
         status?: CallResult["status"];
         mode?: CallMode;
+        language?: CallLanguage;
         script?: CallResult["script"];
         audioBase64?: string;
         mimeType?: string;
@@ -162,12 +166,13 @@ export default function HomePage() {
       setCallResult({
         status: response.ok ? data.status ?? "script-only" : "error",
         mode,
+        language: data.language ?? callLanguage,
         script: data.script,
         audioUrl,
         missingEnv: data.missingEnv
       });
     } catch {
-      setCallResult({ status: "error", mode });
+      setCallResult({ status: "error", mode, language: callLanguage });
     }
   }
 
@@ -358,6 +363,22 @@ export default function HomePage() {
                       : "Email"}
                 <Mail size={18} />
               </button>
+              <div className="languageSwitch" aria-label="Call language">
+                <button
+                  className={callLanguage === "en" ? "active" : ""}
+                  onClick={() => setCallLanguage("en")}
+                  type="button"
+                >
+                  English
+                </button>
+                <button
+                  className={callLanguage === "de" ? "active" : ""}
+                  onClick={() => setCallLanguage("de")}
+                  type="button"
+                >
+                  Deutsch
+                </button>
+              </div>
               <div className="callActions">
                 <button
                   className="secondaryAction"
@@ -657,7 +678,10 @@ function CallPreview({ result }: { result: CallResult }) {
   return (
     <div className="callPreview">
       <div>
-        <span>{result.status === "audio-ready" ? "Audio ready" : result.missingEnv ?? "Script ready"}</span>
+        <span>
+          {result.status === "audio-ready" ? "Audio ready" : result.missingEnv ?? "Script ready"} ·{" "}
+          {result.language === "de" ? "Deutsch" : "English"}
+        </span>
         <strong>
           {result.script.title} · {result.script.duration}
         </strong>
