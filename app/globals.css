@@ -188,6 +188,10 @@ button {
   padding: 6px 2px 0;
 }
 
+.outputTitle {
+  max-width: 360px;
+}
+
 h1,
 h2,
 p {
@@ -205,6 +209,13 @@ h2 {
   font-size: 23px;
   line-height: 1.08;
   letter-spacing: 0;
+}
+
+.outputTitle h2 {
+  margin-top: 5px;
+  color: #34312b;
+  font-size: 22px;
+  line-height: 1.12;
 }
 
 .sourceLink,
@@ -490,8 +501,9 @@ h2 {
 }
 
 .argumentBox {
+  position: relative;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr) 20px;
   gap: 10px;
   margin-top: 18px;
   padding: 14px;
@@ -505,6 +517,45 @@ h2 {
 .cautionBox span {
   font-size: 15px;
   line-height: 1.45;
+}
+
+.infoTip {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  color: #194f39;
+  cursor: help;
+}
+
+.tipBubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  width: min(340px, 72vw);
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  pointer-events: none;
+  visibility: hidden;
+  background: #22201c;
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms ease;
+}
+
+.infoTip:hover .tipBubble,
+.infoTip:focus .tipBubble {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .cautionBox {
@@ -585,6 +636,10 @@ h2 {
   .panelHeader {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .outputTitle {
+    max-width: none;
   }
 
   .profileStack,

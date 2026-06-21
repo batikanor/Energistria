@@ -8,6 +8,7 @@ import {
   BadgeEuro,
   Brain,
   CalendarClock,
+  CircleHelp,
   ExternalLink,
   Home,
   MapPinned,
@@ -137,10 +138,8 @@ export default function HomePage() {
           <div className="commitPanel">
             <ShieldCheck size={18} />
             <div>
-              <strong>Pitch posture</strong>
-              <span>
-                Public address demo data, fictional LinkedIn personas, real Wayback imagery.
-              </span>
+              <strong>Data boundary</strong>
+              <span>Public addresses, fictional personas, real Wayback imagery.</span>
             </div>
           </div>
         </aside>
@@ -148,8 +147,12 @@ export default function HomePage() {
         <section className="mainColumn">
           <header className="topBar">
             <div>
-              <p className="eyebrow">Reonic track weapon</p>
-              <h1>Turn aerial history into a reason to sign.</h1>
+              <p className="eyebrow">Input</p>
+              <h1>Customer profile and address.</h1>
+            </div>
+            <div className="outputTitle">
+              <p className="eyebrow">Output</p>
+              <h2>Visual evidence, solar argument, next action.</h2>
             </div>
             <a className="sourceLink" href="https://livingatlas.arcgis.com/wayback/" target="_blank">
               ArcGIS Wayback
@@ -163,7 +166,7 @@ export default function HomePage() {
             <div className="dealPanel">
               <div className="panelHeader">
                 <div>
-                  <p className="eyebrow">Selected lead</p>
+                  <p className="eyebrow">Input record</p>
                   <h2>{selected.name}</h2>
                 </div>
                 <span className="statusPill">{selected.status}</span>
@@ -201,7 +204,7 @@ export default function HomePage() {
           <section className="timelineStrip" aria-label="Wayback release timeline">
             <div className="timelineHead">
               <Play size={16} />
-              <strong>Animated neighborhood change</strong>
+              <strong>Imagery frames</strong>
               <span>{timelineSource === "esri-local-changes" ? "Local-change releases from Esri" : "Curated fallback releases"}</span>
             </div>
             <div className="timelineButtons">
@@ -222,7 +225,7 @@ export default function HomePage() {
             <div className="visionPanel">
               <div className="panelHeader">
                 <div>
-                  <p className="eyebrow">Vision LLM argument</p>
+                  <p className="eyebrow">Output brief</p>
                   <h2>{loadingBrief ? "Reading frames..." : brief?.headline}</h2>
                 </div>
                 <span className="confidence">
@@ -243,18 +246,19 @@ export default function HomePage() {
               <div className="argumentBox">
                 <Sparkles size={17} />
                 <p>{brief?.argument}</p>
+                <InfoTip text="Verbal line: this is where we explain why the same imagery can create social proof, ROI pressure, or first-mover status depending on what the visual model sees." />
               </div>
 
               <div className="cautionBox">
-                <strong>Do not say</strong>
+                <strong>Constraint</strong>
                 <span>{brief?.caution}</span>
               </div>
             </div>
 
             <div className="outreachPanel">
               <div>
-                <p className="eyebrow">Close sequence</p>
-                <h2>Generated next moves</h2>
+                <p className="eyebrow">Output actions</p>
+                <h2>Generated follow-up</h2>
               </div>
 
               <ActionRow label="Email subject" value={selected.outreach.subject} />
@@ -263,7 +267,7 @@ export default function HomePage() {
               <ActionRow label="CTA" value={brief?.nextMove ?? selected.outreach.cta} />
 
               <button className="primaryAction" type="button">
-                Build personalized deal room
+                Generate customer page
                 <ArrowRight size={18} />
               </button>
             </div>
@@ -331,6 +335,15 @@ function WaybackViewer({
         </span>
       </div>
     </div>
+  );
+}
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="infoTip" tabIndex={0}>
+      <CircleHelp size={16} aria-hidden="true" />
+      <span className="tipBubble">{text}</span>
+    </span>
   );
 }
 
