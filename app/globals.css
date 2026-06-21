@@ -909,6 +909,65 @@ h2 {
   gap: 12px;
 }
 
+.callActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.callActions .secondaryAction {
+  min-width: 0;
+  padding-inline: 10px;
+}
+
+.callPreview {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  background: #f6f0e5;
+  border: 1px solid #e7dece;
+  border-radius: 8px;
+}
+
+.callPreview div {
+  display: grid;
+  gap: 4px;
+}
+
+.callPreview span {
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.callPreview strong {
+  font-size: 15px;
+}
+
+.callPreview audio {
+  width: 100%;
+  height: 38px;
+}
+
+.callPreview p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #2f2d28;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.callPreview small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .actionRow {
   display: grid;
   gap: 6px;

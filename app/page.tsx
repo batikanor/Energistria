@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Grid2X2,
   Home,
+  Mic2,
   Mail,
   MapPinned,
   PackageOpen,
@@ -32,6 +33,21 @@ type WaybackRelease = {
 };
 
 type ViewMode = "compare" | "animate";
+type CallMode = "brief" | "detailed";
+type CallResult = {
+  status: "idle" | "generating" | "audio-ready" | "script-only" | "error";
+  mode?: CallMode;
+  script?: {
+    title: string;
+    duration: string;
+    repGoal: string;
+    voiceText: string;
+    objectionHandle: string;
+    nextStep: string;
+  };
+  audioUrl?: string;
+  missingEnv?: string;
+};
 
 export default function HomePage() {
   const [selectedId, setSelectedId] = useState(profiles[0].id);
@@ -41,6 +57,7 @@ export default function HomePage() {
   const [brief, setBrief] = useState<VisionBrief | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("compare");
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "queued" | "error">("idle");
+  const [callResult, setCallResult] = useState<CallResult>({ status: "idle" });
 
   const selected = profiles.find((profile) => profile.id === selectedId) ?? profiles[0];
   const activeRelease = timeline[frameIndex % timeline.length] ?? fallbackWaybackReleases[0];
@@ -100,6 +117,7 @@ export default function HomePage() {
     setTimelineSource("fallback");
     setBrief(null);
     setEmailStatus("idle");
+    setCallResult({ status: "idle" });
   }
 
   async function sendEmail() {
@@ -114,6 +132,42 @@ export default function HomePage() {
       setEmailStatus(response.ok ? (data.status === "sent" ? "sent" : "queued") : "error");
     } catch {
       setEmailStatus("error");
+    }
+  }
+
+  async function generateCall(mode: CallMode) {
+    if (callResult.audioUrl) {
+      URL.revokeObjectURL(callResult.audioUrl);
+    }
+    setCallResult({ status: "generating", mode });
+    try {
+      const response = await fetch("/api/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: selected.id, brief, mode })
+      });
+      const data = (await response.json()) as {
+        status?: CallResult["status"];
+        mode?: CallMode;
+        script?: CallResult["script"];
+        audioBase64?: string;
+        mimeType?: string;
+        missingEnv?: string;
+      };
+      const audioUrl =
+        data.audioBase64 && data.mimeType
+          ? URL.createObjectURL(base64ToBlob(data.audioBase64, data.mimeType))
+          : undefined;
+
+      setCallResult({
+        status: response.ok ? data.status ?? "script-only" : "error",
+        mode,
+        script: data.script,
+        audioUrl,
+        missingEnv: data.missingEnv
+      });
+    } catch {
+      setCallResult({ status: "error", mode });
     }
   }
 
@@ -304,6 +358,29 @@ export default function HomePage() {
                       : "Email"}
                 <Mail size={18} />
               </button>
+              <div className="callActions">
+                <button
+                  className="secondaryAction"
+                  disabled={callResult.status === "generating"}
+                  onClick={() => generateCall("brief")}
+                  type="button"
+                >
+                  {callResult.status === "generating" && callResult.mode === "brief" ? "Generating..." : "Generate brief call"}
+                  <Mic2 size={18} />
+                </button>
+                <button
+                  className="secondaryAction"
+                  disabled={callResult.status === "generating"}
+                  onClick={() => generateCall("detailed")}
+                  type="button"
+                >
+                  {callResult.status === "generating" && callResult.mode === "detailed"
+                    ? "Generating..."
+                    : "Generate detailed call"}
+                  <Mic2 size={18} />
+                </button>
+              </div>
+              {callResult.script ? <CallPreview result={callResult} /> : null}
             </div>
           </section>
         </section>
@@ -570,4 +647,33 @@ function ActionRow({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function CallPreview({ result }: { result: CallResult }) {
+  if (!result.script) {
+    return null;
+  }
+
+  return (
+    <div className="callPreview">
+      <div>
+        <span>{result.status === "audio-ready" ? "Audio ready" : result.missingEnv ?? "Script ready"}</span>
+        <strong>
+          {result.script.title} · {result.script.duration}
+        </strong>
+      </div>
+      {result.audioUrl ? <audio controls src={result.audioUrl} /> : null}
+      <p>{result.script.voiceText}</p>
+      <small>{result.script.repGoal}</small>
+    </div>
+  );
+}
+
+function base64ToBlob(base64: string, mimeType: string) {
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new Blob([bytes], { type: mimeType });
 }
