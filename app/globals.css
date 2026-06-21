@@ -1091,16 +1091,31 @@ h2 {
   font-weight: 800;
 }
 
-.customerGrid {
+.customerHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.customerFeature,
+.customerSection,
+.customerTwoColumn {
+  max-width: 1180px;
+  margin: 0 auto 22px;
+}
+
+.customerFeature {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 22px;
-  max-width: 1180px;
-  margin: 0 auto;
 }
 
-.customerImage,
-.customerOffer,
+.customerFeatureImage,
+.customerFeatureCopy,
+.customerFrame,
+.customerNarrative,
+.customerSection,
 .envelope,
 .paper {
   background: rgba(255, 253, 248, 0.96);
@@ -1109,20 +1124,21 @@ h2 {
   box-shadow: 0 18px 50px rgba(31, 25, 16, 0.08);
 }
 
-.customerImage {
+.customerFeatureImage {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 1.25;
+  min-height: 560px;
 }
 
-.customerImage img {
+.customerFeatureImage img,
+.customerFrame img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   image-rendering: auto;
 }
 
-.customerImage span {
+.customerFeatureImage span {
   position: absolute;
   right: 14px;
   bottom: 14px;
@@ -1134,16 +1150,39 @@ h2 {
   border-radius: 999px;
 }
 
-.customerOffer {
+.customerFeatureCopy {
   display: grid;
   align-content: start;
   gap: 18px;
   padding: 22px;
 }
 
-.customerOffer h2 {
-  font-size: clamp(27px, 3vw, 42px);
-  line-height: 1.02;
+.customerFeatureCopy > span,
+.customerSectionHead span,
+.customerNarrative span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.customerFeatureCopy h2,
+.customerSectionHead h2,
+.customerNarrative h2 {
+  margin: 0;
+  font-size: clamp(24px, 2.6vw, 38px);
+  font-weight: 760;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.customerFeatureCopy p,
+.customerNarrative p,
+.customerFrame p {
+  color: #34312b;
+  font-size: 16px;
+  font-weight: 520;
+  line-height: 1.45;
 }
 
 .customerMetrics,
@@ -1179,6 +1218,7 @@ h2 {
 .customerMetrics strong,
 .paperMetrics strong {
   font-size: 28px;
+  font-weight: 780;
 }
 
 .customerCta {
@@ -1186,6 +1226,198 @@ h2 {
   min-height: 50px;
   margin-top: 4px;
   background: var(--green);
+}
+
+.customerCta.compact {
+  min-height: 40px;
+  margin-top: 0;
+}
+
+.customerSection {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.customerSection.split {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+}
+
+.customerSectionHead {
+  display: grid;
+  gap: 6px;
+}
+
+.customerFrameGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.customerFrame {
+  overflow: hidden;
+}
+
+.customerFrame img {
+  display: block;
+  aspect-ratio: 1;
+  border-bottom: 1px solid var(--line);
+}
+
+.customerFrame div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.customerFrame strong {
+  font-size: 17px;
+  font-weight: 780;
+}
+
+.customerFrame p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 520;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.customerSignalGrid {
+  display: grid;
+  gap: 9px;
+}
+
+.customerSignalGrid article {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  background: #f8f3ea;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  border-radius: 8px;
+}
+
+.customerSignalGrid article.green {
+  border-left-color: var(--green);
+}
+
+.customerSignalGrid article.amber {
+  border-left-color: var(--amber);
+}
+
+.customerSignalGrid article.red {
+  border-left-color: var(--red);
+}
+
+.customerSignalGrid span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.customerSignalGrid strong {
+  font-size: 14px;
+  font-weight: 680;
+  line-height: 1.3;
+}
+
+.customerTwoColumn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+}
+
+.customerNarrative {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 260px;
+  padding: 22px;
+}
+
+.customerNarrative svg {
+  color: var(--green);
+}
+
+.customerNarrative.muted svg {
+  color: var(--amber);
+}
+
+.customerPlan {
+  display: grid;
+  gap: 10px;
+}
+
+.customerProposalList {
+  display: grid;
+  gap: 10px;
+}
+
+.customerProposalList article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  background: #f8f3ea;
+  border: 1px solid #e7dece;
+  border-radius: 8px;
+}
+
+.customerProposalList span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  background: var(--coal);
+  border-radius: 999px;
+}
+
+.customerProposalList p {
+  color: #34312b;
+  font-size: 15px;
+  font-weight: 540;
+  line-height: 1.45;
+}
+
+.customerPlan article {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  background: #f6f0e5;
+  border: 1px solid #e7dece;
+  border-radius: 8px;
+}
+
+.customerPlan svg {
+  color: var(--green);
+}
+
+.customerPlan div {
+  display: grid;
+  gap: 5px;
+}
+
+.customerPlan span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.customerPlan strong {
+  font-size: 16px;
+  font-weight: 620;
+  line-height: 1.4;
 }
 
 .envelopePage {
@@ -1382,7 +1614,9 @@ h2 {
   .workspace,
   .heroGrid,
   .bottomGrid,
-  .customerGrid {
+  .customerFeature,
+  .customerSection.split,
+  .customerTwoColumn {
     grid-template-columns: 1fr;
   }
 
@@ -1490,6 +1724,18 @@ h2 {
     flex-direction: column;
   }
 
+  .customerHeroActions {
+    justify-content: flex-start;
+  }
+
+  .customerFeatureImage {
+    min-height: 360px;
+  }
+
+  .customerFrameGrid {
+    grid-template-columns: 1fr;
+  }
+
   .customerMetrics,
   .paperMetrics {
     grid-template-columns: 1fr;
@@ -1540,8 +1786,11 @@ h2 {
     box-shadow: none;
   }
 
-  .customerImage,
-  .customerOffer,
+  .customerFeatureImage,
+  .customerFeatureCopy,
+  .customerFrame,
+  .customerNarrative,
+  .customerSection,
   .paper {
     box-shadow: none;
   }
