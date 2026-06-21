@@ -102,15 +102,14 @@ export default function HomePage() {
     <main className="shell">
       <section className="workspace">
         <aside className="leadRail">
-          <div className="brand">
-            <div className="brandMark">
-              <Zap size={21} />
+            <div className="brand">
+              <div className="brandMark">
+                <Zap size={21} />
+              </div>
+              <div>
+                <strong>Energistria</strong>
+              </div>
             </div>
-            <div>
-              <span>Energistria</span>
-              <strong>Address to close plan</strong>
-            </div>
-          </div>
 
           <div className="railLabel">Sample customers</div>
           <div className="profileStack">
@@ -192,10 +191,34 @@ export default function HomePage() {
               </div>
 
               <div className="quoteGrid">
-                <Metric icon={<BadgeEuro size={18} />} label="Monthly saving" value={`€${selected.quote.monthlySaving}`} />
-                <Metric icon={<Satellite size={18} />} label="PV system" value={`${selected.quote.systemKw} kW`} />
-                <Metric icon={<Zap size={18} />} label="Battery" value={`${selected.quote.batteryKwh} kWh`} />
-                <Metric icon={<CalendarClock size={18} />} label="Payback" value={`${selected.quote.paybackYears} yrs`} />
+                <Metric
+                  detail="Derived from the sample installer quote: estimated self-consumption, current bill assumption, and financing schedule."
+                  icon={<BadgeEuro size={18} />}
+                  label="Monthly saving"
+                  value={`€${selected.quote.monthlySaving}`}
+                />
+                <Metric
+                  detail="Sample quote input from the installer. Satellite imagery is used to sanity-check the roof story, not to certify engineering yield."
+                  icon={<Satellite size={18} />}
+                  label="PV system"
+                  value={`${selected.quote.systemKw} kW`}
+                />
+                <Metric
+                  detail="Sample package configuration used for the follow-up strategy and battery/backup story."
+                  icon={<Zap size={18} />}
+                  label="Battery"
+                  value={`${selected.quote.batteryKwh} kWh`}
+                />
+                <Metric
+                  detail="Derived estimate from system cost, savings, and financing assumptions in the sample quote."
+                  icon={<CalendarClock size={18} />}
+                  label="Payback"
+                  value={`${selected.quote.paybackYears} yrs`}
+                />
+              </div>
+              <div className="quoteSource">
+                Quote inputs + estimate
+                <InfoTip text="Story: the installer already has a quote or CRM estimate. The satellite archive explains why this customer should believe and act on that quote." />
               </div>
 
               <div className="signalStack">
@@ -439,16 +462,18 @@ function InfoTip({ text }: { text: string }) {
 }
 
 function Metric({
+  detail,
   icon,
   label,
   value
 }: {
+  detail: string;
   icon: React.ReactNode;
   label: string;
   value: string;
 }) {
   return (
-    <div className="metric">
+    <div className="metric" title={detail}>
       {icon}
       <span>{label}</span>
       <strong>{value}</strong>
