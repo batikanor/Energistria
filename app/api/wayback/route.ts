@@ -4,8 +4,11 @@ import { fallbackWaybackReleases } from "@/lib/profiles";
 type WaybackItem = {
   releaseNum: number;
   releaseDateLabel: string;
+  releaseDatetime?: number;
   itemTitle: string;
 };
+
+const MIN_FRAME_SPACING_MS = 60 * 24 * 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -22,17 +25,24 @@ export async function GET(request: NextRequest) {
     const items = (await getWaybackItemsWithLocalChanges(
       { latitude, longitude },
       zoom,
-      { onlyUseSizeToFilterDuplicates: true }
+      { onlyUseSizeToFilterDuplicates: false }
     )) as WaybackItem[];
 
     const usefulItems = items
-      .filter((item) => item.releaseNum && item.releaseDateLabel)
-      .sort((a, b) => a.releaseNum - b.releaseNum);
+      .filter(isUsableSatelliteFrame)
+      .sort((a, b) => getReleaseTime(a) - getReleaseTime(b));
 
     const selected = pickTimeline(usefulItems);
     return NextResponse.json({
       items: selected.length >= 2 ? selected : fallbackWaybackReleases,
-      source: selected.length >= 2 ? "esri-local-changes" : "fallback"
+      source: selected.length >= 2 ? "esri-local-changes-exact" : "fallback",
+      constraints: {
+        chronological: true,
+        minimumFrameSpacingDays: 60,
+        minimumPixelDifference: 1,
+        exactImageDataDeduplication: true,
+        localChangeSource: "ArcGIS Wayback tilemap releases"
+      }
     });
   } catch (error) {
     return NextResponse.json({
@@ -44,13 +54,35 @@ export async function GET(request: NextRequest) {
 }
 
 function pickTimeline(items: WaybackItem[]) {
-  if (items.length <= 4) {
-    return items;
+  const spacedItems: WaybackItem[] = [];
+
+  for (const item of items) {
+    const previousKept = spacedItems[spacedItems.length - 1];
+    if (!previousKept || getReleaseTime(item) - getReleaseTime(previousKept) >= MIN_FRAME_SPACING_MS) {
+      spacedItems.push(item);
+    }
   }
 
-  const first = items[0];
-  const last = items[items.length - 1];
-  const middleA = items[Math.floor(items.length * 0.38)];
-  const middleB = items[Math.floor(items.length * 0.7)];
+  if (spacedItems.length <= 4) {
+    return spacedItems;
+  }
+
+  const first = spacedItems[0];
+  const last = spacedItems[spacedItems.length - 1];
+  const middleA = spacedItems[Math.floor(spacedItems.length * 0.38)];
+  const middleB = spacedItems[Math.floor(spacedItems.length * 0.7)];
   return [first, middleA, middleB, last].filter(Boolean);
+}
+
+function isUsableSatelliteFrame(item: WaybackItem) {
+  return (
+    Boolean(item.releaseNum) &&
+    Boolean(item.releaseDateLabel) &&
+    Number.isFinite(getReleaseTime(item)) &&
+    item.itemTitle.toLowerCase().includes("world imagery")
+  );
+}
+
+function getReleaseTime(item: WaybackItem) {
+  return item.releaseDatetime ?? Date.parse(`${item.releaseDateLabel}T00:00:00.000Z`);
 }

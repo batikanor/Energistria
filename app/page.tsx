@@ -43,6 +43,7 @@ export default function HomePage() {
   const activeRelease = timeline[frameIndex % timeline.length] ?? fallbackWaybackReleases[0];
   const loadingBrief = brief === null;
   const visibleReleases = useMemo(() => timeline.slice(0, 4), [timeline]);
+  const isWaybackSource = timelineSource.startsWith("esri-local-changes");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -211,8 +212,8 @@ export default function HomePage() {
           <section className="timelineStrip" aria-label="Wayback release timeline">
             <div className="timelineHead">
               <Satellite size={16} />
-              <strong>{timelineSource === "esri-local-changes" ? "Wayback" : "Fallback"}</strong>
-              <span>{timelineSource === "esri-local-changes" ? "Local-change releases from Esri" : "Curated fallback releases"}</span>
+              <strong>{isWaybackSource ? "Wayback" : "Fallback"}</strong>
+              <span>{isWaybackSource ? "Changed satellite frames" : "Curated fallback releases"}</span>
             </div>
             <div className="timelineButtons">
               {timeline.map((release, index) => (
@@ -299,6 +300,7 @@ function WaybackViewer({
   source: string;
 }) {
   const displayed = mode === "compare" ? releases : [activeRelease];
+  const sourceLabel = source.startsWith("esri-local-changes") ? "Wayback exact" : source;
 
   return (
     <div className={`mapPanel ${mode}`}>
@@ -307,7 +309,7 @@ function WaybackViewer({
           <Satellite size={16} />
           {mode === "compare" ? "4 frames" : activeRelease.itemTitle}
         </span>
-        <span>{source}</span>
+        <span>{sourceLabel}</span>
       </div>
       {mode === "compare" ? (
         <div className="compareGrid">
