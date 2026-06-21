@@ -12,7 +12,9 @@ import {
   ExternalLink,
   Grid2X2,
   Home,
+  Mail,
   MapPinned,
+  PackageOpen,
   Play,
   Radar,
   Satellite,
@@ -38,12 +40,13 @@ export default function HomePage() {
   const [frameIndex, setFrameIndex] = useState(0);
   const [brief, setBrief] = useState<VisionBrief | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("compare");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "queued" | "error">("idle");
 
   const selected = profiles.find((profile) => profile.id === selectedId) ?? profiles[0];
   const activeRelease = timeline[frameIndex % timeline.length] ?? fallbackWaybackReleases[0];
   const loadingBrief = brief === null;
   const visibleReleases = useMemo(() => timeline.slice(0, 4), [timeline]);
-  const isWaybackSource = timelineSource.startsWith("esri-local-changes");
+  const hasExactArchiveFrames = timelineSource.startsWith("esri-local-changes");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -96,20 +99,36 @@ export default function HomePage() {
     setTimeline(fallbackWaybackReleases);
     setTimelineSource("fallback");
     setBrief(null);
+    setEmailStatus("idle");
+  }
+
+  async function sendEmail() {
+    setEmailStatus("sending");
+    try {
+      const response = await fetch("/api/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: selected.id, brief })
+      });
+      const data = (await response.json()) as { status?: string };
+      setEmailStatus(response.ok ? (data.status === "sent" ? "sent" : "queued") : "error");
+    } catch {
+      setEmailStatus("error");
+    }
   }
 
   return (
     <main className="shell">
       <section className="workspace">
         <aside className="leadRail">
-            <div className="brand">
-              <div className="brandMark">
-                <Zap size={21} />
-              </div>
-              <div>
-                <strong>Energistria</strong>
-              </div>
+          <div className="brand">
+            <div className="brandMark">
+              <Zap size={21} />
             </div>
+            <div>
+              <strong>Energistria</strong>
+            </div>
+          </div>
 
           <div className="railLabel">Sample customers</div>
           <div className="profileStack">
@@ -141,7 +160,7 @@ export default function HomePage() {
               <button
                 className={viewMode === "compare" ? "active" : ""}
                 onClick={() => setViewMode("compare")}
-                title="Four Wayback frames side by side"
+                title="Four archive frames side by side"
                 type="button"
               >
                 <Grid2X2 size={17} />
@@ -149,14 +168,14 @@ export default function HomePage() {
               <button
                 className={viewMode === "animate" ? "active" : ""}
                 onClick={() => setViewMode("animate")}
-                title="Fast Wayback animation"
+                title="Fast archive animation"
                 type="button"
               >
                 <Play size={17} />
               </button>
             </div>
             <a className="sourceLink" href="https://livingatlas.arcgis.com/wayback/" target="_blank">
-              ArcGIS Wayback
+              Satellite archive
               <ExternalLink size={15} />
             </a>
           </header>
@@ -232,11 +251,11 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section className="timelineStrip" aria-label="Wayback release timeline">
+          <section className="timelineStrip" aria-label="Satellite archive timeline">
             <div className="timelineHead">
               <Satellite size={16} />
-              <strong>{isWaybackSource ? "Wayback" : "Fallback"}</strong>
-              <span>{isWaybackSource ? "Changed satellite frames" : "Curated fallback releases"}</span>
+              <strong>Archive</strong>
+              <span>{hasExactArchiveFrames ? "Changed satellite frames" : "Prepared archive frames"}</span>
             </div>
             <div className="timelineButtons">
               {timeline.map((release, index) => (
@@ -295,9 +314,25 @@ export default function HomePage() {
               <ActionRow label="Call coaching" value={selected.outreach.callLine} />
               <ActionRow label="CTA" value={brief?.nextMove ?? selected.outreach.cta} />
 
-              <button className="primaryAction" type="button">
-                Generate customer page
+              <a className="primaryAction" href={`/customer/${selected.id}`} target="_blank">
+                Final customer page
                 <ArrowRight size={18} />
+              </a>
+              <a className="secondaryAction" href={`/envelope/${selected.id}`} target="_blank">
+                Generate customer envelope
+                <PackageOpen size={18} />
+              </a>
+              <button className="secondaryAction" disabled={emailStatus === "sending"} onClick={sendEmail} type="button">
+                {emailStatus === "sending"
+                  ? "Sending..."
+                  : emailStatus === "sent"
+                    ? "Email sent"
+                    : emailStatus === "queued"
+                      ? "Email queued"
+                    : emailStatus === "error"
+                      ? "Email failed"
+                      : "Email"}
+                <Mail size={18} />
               </button>
             </div>
           </section>
@@ -323,14 +358,14 @@ function WaybackViewer({
   source: string;
 }) {
   const displayed = mode === "compare" ? releases : [activeRelease];
-  const sourceLabel = source.startsWith("esri-local-changes") ? "Wayback exact" : source;
+  const sourceLabel = source.startsWith("esri-local-changes") ? "Exact changes" : "Curated";
 
   return (
     <div className={`mapPanel ${mode}`}>
       <div className="mapChrome">
         <span>
           <Satellite size={16} />
-          {mode === "compare" ? "4 frames" : activeRelease.itemTitle}
+          {mode === "compare" ? "4 frames" : `Frame ${activeRelease.releaseDateLabel}`}
         </span>
         <span>{sourceLabel}</span>
       </div>

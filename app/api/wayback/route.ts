@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       items: fallbackWaybackReleases,
       source: "fallback",
-      error: error instanceof Error ? error.message : "Wayback lookup failed"
+      error: error instanceof Error ? error.message : "Satellite archive lookup failed"
     });
   }
 }

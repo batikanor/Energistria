@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Energistria",
-  description: "Wayback-driven solar persuasion intelligence for renewable installers."
+  description: "Satellite-driven solar persuasion intelligence for renewable installers."
 };
 
 export default function RootLayout({

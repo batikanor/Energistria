@@ -106,6 +106,9 @@ button {
 .profileStack {
   display: grid;
   gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .profileCard {
@@ -764,18 +767,395 @@ h2 {
   align-items: center;
   min-height: 46px;
   margin-top: 8px;
+  padding: 0 16px;
   color: #fff;
   font-weight: 900;
+  text-decoration: none;
   background: var(--green);
   border: 0;
   border-radius: 8px;
   cursor: pointer;
 }
 
+.secondaryAction {
+  display: inline-flex;
+  justify-content: center;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--coal);
+  font-weight: 900;
+  text-decoration: none;
+  background: #fbf7ef;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.secondaryAction:disabled {
+  color: var(--muted);
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.customerPage,
+.envelopePage {
+  min-height: 100vh;
+  padding: 28px;
+  background:
+    linear-gradient(90deg, rgba(20, 125, 85, 0.08) 0, transparent 36%),
+    var(--bg);
+}
+
+.backLink,
+.printButton,
+.customerCta {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  font-weight: 900;
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.backLink {
+  color: var(--muted);
+}
+
+.printButton,
+.customerCta {
+  color: #fff;
+  background: var(--coal);
+  border: 0;
+  cursor: pointer;
+}
+
+.customerHero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  max-width: 1180px;
+  margin: 28px auto 22px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.customerHero p {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.customerHero h1 {
+  margin: 6px 0;
+  font-size: clamp(42px, 7vw, 86px);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.customerHero span {
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.customerGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  gap: 22px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.customerImage,
+.customerOffer,
+.envelope,
+.paper {
+  background: rgba(255, 253, 248, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(31, 25, 16, 0.08);
+}
+
+.customerImage {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1.25;
+}
+
+.customerImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+
+.customerImage span {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 7px 10px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(34, 32, 28, 0.84);
+  border-radius: 999px;
+}
+
+.customerOffer {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 22px;
+}
+
+.customerOffer h2 {
+  font-size: clamp(27px, 3vw, 42px);
+  line-height: 1.02;
+}
+
+.customerMetrics,
+.paperMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.customerMetrics > div,
+.paperMetrics > div {
+  display: grid;
+  gap: 8px;
+  min-height: 108px;
+  padding: 14px;
+  background: #f6f0e5;
+  border: 1px solid #e7dece;
+  border-radius: 8px;
+}
+
+.customerMetrics svg,
+.paperMetrics svg {
+  color: var(--green);
+}
+
+.customerMetrics span,
+.paperMetrics span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.customerMetrics strong,
+.paperMetrics strong {
+  font-size: 28px;
+}
+
+.customerCta {
+  justify-content: center;
+  min-height: 50px;
+  margin-top: 4px;
+  background: var(--green);
+}
+
+.envelopePage {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.envelopePage > .printButton {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 10;
+}
+
+.envelopeScene {
+  position: relative;
+  width: min(1120px, 94vw);
+  min-height: min(720px, 86vh);
+  perspective: 1400px;
+}
+
+.envelope {
+  position: absolute;
+  right: 9%;
+  bottom: 8%;
+  z-index: 4;
+  display: grid;
+  gap: 8px;
+  width: min(520px, 72vw);
+  min-height: 280px;
+  padding: 42px;
+  transform-origin: bottom;
+  animation: envelopeOpen 1100ms ease-out forwards;
+}
+
+.envelope::before,
+.envelope::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.envelope::before {
+  background:
+    linear-gradient(145deg, transparent 49.5%, rgba(222, 216, 204, 0.8) 50%, transparent 50.5%),
+    linear-gradient(35deg, transparent 49.5%, rgba(222, 216, 204, 0.8) 50%, transparent 50.5%);
+}
+
+.envelope::after {
+  transform-origin: top;
+  background: #efe6d8;
+  clip-path: polygon(0 0, 100% 0, 50% 54%);
+  animation: flapOpen 1100ms ease-out forwards;
+}
+
+.envelope span {
+  position: relative;
+  z-index: 2;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.envelope strong {
+  position: relative;
+  z-index: 2;
+  font-size: 42px;
+  line-height: 0.95;
+}
+
+.envelope em {
+  position: relative;
+  z-index: 2;
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.paper {
+  position: absolute;
+  display: grid;
+  gap: 14px;
+  width: min(410px, 82vw);
+  min-height: 520px;
+  padding: 24px;
+  opacity: 0;
+  transform: translate(48%, 42%) rotate(0deg) scale(0.82);
+  animation: paperOut 900ms ease-out forwards;
+}
+
+.paper h1,
+.paper h2 {
+  margin: 0;
+  line-height: 1;
+}
+
+.paper h1 {
+  font-size: 46px;
+}
+
+.paper h2 {
+  font-size: 30px;
+}
+
+.paper p {
+  color: #33302a;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.38;
+}
+
+.paper img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.paperOne {
+  top: 4%;
+  left: 4%;
+  animation-delay: 480ms;
+}
+
+.paperTwo {
+  top: 12%;
+  left: 35%;
+  animation-delay: 760ms;
+}
+
+.paperThree {
+  top: 24%;
+  left: 64%;
+  animation-delay: 1020ms;
+}
+
+.paperThree strong {
+  align-self: end;
+  padding-top: 14px;
+  color: var(--green);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+@keyframes envelopeOpen {
+  0% {
+    transform: translateY(40px) rotateX(0deg);
+  }
+
+  100% {
+    transform: translateY(110px) rotateX(7deg);
+  }
+}
+
+@keyframes flapOpen {
+  0% {
+    transform: rotateX(0deg);
+  }
+
+  100% {
+    transform: rotateX(158deg);
+  }
+}
+
+@keyframes paperOut {
+  0% {
+    opacity: 0;
+    transform: translate(48%, 42%) rotate(0deg) scale(0.82);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(var(--paper-rotation, -3deg)) scale(1);
+  }
+}
+
+.paperOne {
+  --paper-rotation: -4deg;
+}
+
+.paperTwo {
+  --paper-rotation: 3deg;
+}
+
+.paperThree {
+  --paper-rotation: 7deg;
+}
+
 @media (max-width: 1120px) {
   .workspace,
   .heroGrid,
-  .bottomGrid {
+  .bottomGrid,
+  .customerGrid {
     grid-template-columns: 1fr;
   }
 
@@ -791,6 +1171,31 @@ h2 {
 
   .compareGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .paperOne,
+  .paperTwo,
+  .paperThree {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    min-height: auto;
+  }
+
+  .envelopeScene {
+    display: grid;
+    gap: 18px;
+    min-height: auto;
+    padding-top: 78px;
+  }
+
+  .envelope {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    min-height: 220px;
   }
 }
 
@@ -841,5 +1246,71 @@ h2 {
   .mapCaption {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .customerPage,
+  .envelopePage {
+    padding: 16px;
+  }
+
+  .customerHero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customerMetrics,
+  .paperMetrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  body,
+  .customerPage,
+  .envelopePage {
+    background: #fff;
+  }
+
+  .noPrint,
+  .backLink,
+  .envelope {
+    display: none !important;
+  }
+
+  .envelopePage {
+    display: block;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .envelopeScene {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    width: auto;
+    min-height: auto;
+    perspective: none;
+  }
+
+  .paper,
+  .paperOne,
+  .paperTwo,
+  .paperThree {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    min-height: 0;
+    page-break-inside: avoid;
+    opacity: 1;
+    transform: none;
+    animation: none;
+    box-shadow: none;
+  }
+
+  .customerImage,
+  .customerOffer,
+  .paper {
+    box-shadow: none;
   }
 }
