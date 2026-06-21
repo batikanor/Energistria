@@ -35,10 +35,12 @@ type WaybackRelease = {
 type ViewMode = "compare" | "animate";
 type CallMode = "brief" | "detailed";
 type CallLanguage = "en" | "de";
+type CallProvider = "elevenlabs" | "chatterbox";
 type CallResult = {
   status: "idle" | "generating" | "audio-ready" | "script-only" | "error";
   mode?: CallMode;
   language?: CallLanguage;
+  provider?: CallProvider;
   script?: {
     title: string;
     duration: string;
@@ -49,6 +51,7 @@ type CallResult = {
   };
   audioUrl?: string;
   missingEnv?: string;
+  audioError?: string;
 };
 
 export default function HomePage() {
@@ -61,6 +64,7 @@ export default function HomePage() {
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "queued" | "error">("idle");
   const [callResult, setCallResult] = useState<CallResult>({ status: "idle" });
   const [callLanguage, setCallLanguage] = useState<CallLanguage>("en");
+  const [callProvider, setCallProvider] = useState<CallProvider>("elevenlabs");
 
   const selected = profiles.find((profile) => profile.id === selectedId) ?? profiles[0];
   const activeRelease = timeline[frameIndex % timeline.length] ?? fallbackWaybackReleases[0];
@@ -142,21 +146,23 @@ export default function HomePage() {
     if (callResult.audioUrl) {
       URL.revokeObjectURL(callResult.audioUrl);
     }
-    setCallResult({ status: "generating", mode, language: callLanguage });
+    setCallResult({ status: "generating", mode, language: callLanguage, provider: callProvider });
     try {
       const response = await fetch("/api/call", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId: selected.id, brief, mode, language: callLanguage })
+        body: JSON.stringify({ profileId: selected.id, brief, mode, language: callLanguage, provider: callProvider })
       });
       const data = (await response.json()) as {
         status?: CallResult["status"];
         mode?: CallMode;
         language?: CallLanguage;
+        provider?: CallProvider;
         script?: CallResult["script"];
         audioBase64?: string;
         mimeType?: string;
         missingEnv?: string;
+        audioError?: string;
       };
       const audioUrl =
         data.audioBase64 && data.mimeType
@@ -167,12 +173,14 @@ export default function HomePage() {
         status: response.ok ? data.status ?? "script-only" : "error",
         mode,
         language: data.language ?? callLanguage,
+        provider: data.provider ?? callProvider,
         script: data.script,
         audioUrl,
-        missingEnv: data.missingEnv
+        missingEnv: data.missingEnv,
+        audioError: data.audioError
       });
     } catch {
-      setCallResult({ status: "error", mode, language: callLanguage });
+      setCallResult({ status: "error", mode, language: callLanguage, provider: callProvider });
     }
   }
 
@@ -377,6 +385,22 @@ export default function HomePage() {
                   type="button"
                 >
                   Deutsch
+                </button>
+              </div>
+              <div className="languageSwitch" aria-label="Voice backend">
+                <button
+                  className={callProvider === "elevenlabs" ? "active" : ""}
+                  onClick={() => setCallProvider("elevenlabs")}
+                  type="button"
+                >
+                  ElevenLabs
+                </button>
+                <button
+                  className={callProvider === "chatterbox" ? "active" : ""}
+                  onClick={() => setCallProvider("chatterbox")}
+                  type="button"
+                >
+                  Bati clone
                 </button>
               </div>
               <div className="callActions">
@@ -680,7 +704,8 @@ function CallPreview({ result }: { result: CallResult }) {
       <div>
         <span>
           {result.status === "audio-ready" ? "Audio ready" : result.missingEnv ?? "Script ready"} ·{" "}
-          {result.language === "de" ? "Deutsch" : "English"}
+          {result.language === "de" ? "Deutsch" : "English"} ·{" "}
+          {result.provider === "chatterbox" ? "Bati clone" : "ElevenLabs"}
         </span>
         <strong>
           {result.script.title} · {result.script.duration}
@@ -688,6 +713,7 @@ function CallPreview({ result }: { result: CallResult }) {
       </div>
       {result.audioUrl ? <audio controls src={result.audioUrl} /> : null}
       <p>{result.script.voiceText}</p>
+      {result.audioError ? <small>{result.audioError}</small> : null}
       <small>{result.script.repGoal}</small>
     </div>
   );

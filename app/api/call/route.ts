@@ -1,13 +1,26 @@
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { access, readFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { NextRequest, NextResponse } from "next/server";
 import { getProfile, installerName } from "@/lib/profiles";
 import type { VisionBrief } from "@/lib/vision";
 
+export const runtime = "nodejs";
+
 type CallMode = "brief" | "detailed";
 type CallLanguage = "en" | "de";
+type CallProvider = "elevenlabs" | "chatterbox";
 
 const openRouterModel = "anthropic/claude-opus-4.8";
 const elevenModel = "eleven_v3";
 const defaultVoiceId = "21m00Tcm4TlvDq8ikWAM";
+const defaultChatterboxPython = "/Users/batikanorpava/Documents/voice_clone_work/.venv/bin/python";
+const defaultChatterboxReference =
+  "/Users/batikanorpava/Documents/chi_android_bati_voice_clone/new_bati_sample/bati_new_reference_dense_24k.wav";
+const execFileAsync = promisify(execFile);
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
@@ -15,33 +28,25 @@ export async function POST(request: NextRequest) {
     brief?: VisionBrief;
     mode?: CallMode;
     language?: CallLanguage;
+    provider?: CallProvider;
   } | null;
   const profile = getProfile(body?.profileId ?? "");
   const mode: CallMode = body?.mode === "detailed" ? "detailed" : "brief";
   const language: CallLanguage = body?.language === "de" ? "de" : "en";
+  const provider: CallProvider = body?.provider === "chatterbox" ? "chatterbox" : "elevenlabs";
   const script = await buildCallScript(profile, mode, language, body?.brief);
-  const elevenKey = process.env.ELEVENLABS_API_KEY;
 
-  if (!elevenKey) {
-    return NextResponse.json({
-      status: "script-only",
-      missingEnv: "ELEVENLABS_API_KEY",
-      mode,
-      language,
-      script
-    });
-  }
-
-  const voiceId = process.env.ELEVENLABS_VOICE_ID ?? defaultVoiceId;
-  const audio = await renderSpeech(script.voiceText, elevenKey, voiceId);
+  const audio = provider === "chatterbox" ? await renderChatterboxSpeech(script.voiceText) : await renderElevenLabsSpeech(script.voiceText);
 
   if (!audio.ok) {
     return NextResponse.json({
       status: "script-only",
       mode,
       language,
+      provider,
       script,
-      audioError: audio.error
+      audioError: audio.error,
+      missingEnv: audio.missingEnv
     });
   }
 
@@ -49,11 +54,11 @@ export async function POST(request: NextRequest) {
     status: "audio-ready",
     mode,
     language,
+    provider,
     script,
-    audioBase64: Buffer.from(audio.buffer).toString("base64"),
-    mimeType: "audio/mpeg",
-    elevenModel: process.env.ELEVENLABS_MODEL ?? elevenModel,
-    voiceId
+    audioBase64: toBase64(audio.buffer),
+    mimeType: audio.mimeType,
+    audioEngine: audio.engine
   });
 }
 
@@ -132,7 +137,13 @@ async function buildCallScript(
   }
 }
 
-async function renderSpeech(text: string, apiKey: string, voiceId: string) {
+async function renderElevenLabsSpeech(text: string) {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    return { ok: false as const, error: "ElevenLabs API key is not configured.", missingEnv: "ELEVENLABS_API_KEY" };
+  }
+
+  const voiceId = process.env.ELEVENLABS_VOICE_ID ?? defaultVoiceId;
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
@@ -158,7 +169,84 @@ async function renderSpeech(text: string, apiKey: string, voiceId: string) {
     return { ok: false as const, error: `ElevenLabs returned ${response.status}` };
   }
 
-  return { ok: true as const, buffer: await response.arrayBuffer() };
+  return {
+    ok: true as const,
+    buffer: await response.arrayBuffer(),
+    mimeType: "audio/mpeg",
+    engine: process.env.ELEVENLABS_MODEL ?? elevenModel
+  };
+}
+
+async function renderChatterboxSpeech(text: string) {
+  const serviceUrl = process.env.CHATTERBOX_API_URL;
+  if (serviceUrl) {
+    const response = await fetch(serviceUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: stripVoiceCues(text),
+        referenceAudioPath: process.env.CHATTERBOX_REFERENCE_AUDIO ?? defaultChatterboxReference
+      })
+    });
+
+    if (!response.ok) {
+      return { ok: false as const, error: `Chatterbox service returned ${response.status}` };
+    }
+
+    return {
+      ok: true as const,
+      buffer: await response.arrayBuffer(),
+      mimeType: response.headers.get("content-type") ?? "audio/wav",
+      engine: "chatterbox-service"
+    };
+  }
+
+  const python = process.env.CHATTERBOX_PYTHON ?? defaultChatterboxPython;
+  const reference = process.env.CHATTERBOX_REFERENCE_AUDIO ?? defaultChatterboxReference;
+  const scriptPath = join(process.cwd(), "scripts", "chatterbox_tts.py");
+  const outputPath = join(tmpdir(), `energistria-chatterbox-${randomUUID()}.wav`);
+
+  try {
+    await Promise.all([access(python), access(reference), access(scriptPath)]);
+  } catch {
+    return {
+      ok: false as const,
+      error: "Local Chatterbox runtime or Bati reference audio is unavailable.",
+      missingEnv: "CHATTERBOX_API_URL"
+    };
+  }
+
+  try {
+    await execFileAsync(
+      python,
+      [scriptPath, "--text", stripVoiceCues(text), "--reference", reference, "--output", outputPath],
+      {
+        timeout: 240000,
+        maxBuffer: 1024 * 1024 * 8,
+        env: {
+          ...process.env,
+          PYTORCH_ENABLE_MPS_FALLBACK: "1"
+        }
+      }
+    );
+    const buffer = await readFile(outputPath);
+    return { ok: true as const, buffer, mimeType: "audio/wav", engine: "chatterbox-local-bati" };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Chatterbox generation failed."
+    };
+  } finally {
+    await unlink(outputPath).catch(() => undefined);
+  }
+}
+
+function stripVoiceCues(text: string) {
+  return text.replace(/\[[^\]]+\]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function toBase64(buffer: ArrayBuffer | Buffer) {
+  return Buffer.isBuffer(buffer) ? buffer.toString("base64") : Buffer.from(new Uint8Array(buffer)).toString("base64");
 }
 
 function fallbackScript(
